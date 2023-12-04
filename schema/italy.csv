@@ -1,0 +1,14 @@
+color,varietal,name,winery,year,class,region,glass_price,bottle_price,aroma,taste,
+white,Pinot Grigio,Friuli,Terlato,2021,DOC,NULL,10.50,40,"Bright notes of citrus, white peach, pear and spring flowers","Complex and layered with ripe peach, pear, citrus and a mouth filling texture with crisp mineral finish. 20-45 years old, planted at 4,500 vines/hectare over 240 acres. Estate grown and hand-harvested in whole clusters.",
+white,Proesco,B. Alto,NULL,NULL,DOC,NULL,9,33,NULL,NULL,
+red,Chianti,Santa Christina,Antinori,2020,DOCG,Tuscany,10.5,40,"On the nose it is rich with fruity notes of morello cherries, aromatic herbs and balsamic sensations.","Its palate is soft, mouth filling with velvety tannins and a long savory finish.",
+red,Barbera,Silver Label,Fontanafredda,2017,DOC,Piedmont,13.5,52,"Characteristic aromas of Barbera, with a flowery and fruity bouquet.","A full, persistent taste which is nicely dry and velvety."
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
+NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL
