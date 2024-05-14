@@ -1,6 +1,6 @@
-const express = require("express");
-const cors = require("cors");
-
+import fetch from 'node-fetch';
+import express from 'express';
+import cors from 'cors';
 const PORT = process.env.PORT || 8081;
 
 const app = express();
@@ -21,13 +21,37 @@ app.get("/deck/:list", (req, res) => {
     console.log(typeof(card), card)
   }
   console.log(typeof(newDeck))
-  res.end( JSON.stringify(newDeck));
+  const out = getDeck(newDeck)
+  res.end( JSON.stringify(out));
+  console.log(typeof(out))
 });
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
 
-function removeSpace(strings) {
-    return strings.map((string, i) => src.replace("[ \t]+$", ""));
+function getDeck(deck) {
+  const response = []
+  for(let card of deck) {
+    response.push(sqlQuery(card))
+  }
+  return response
+}
+
+function sqlQuery(card){
+  const num = card.substring(0, card.indexOf(' '))
+  card = card.substring(card.indexOf(' ') + 1);
+  console.log(num + " copies of " + card)
+  const image = getCardArt(card)
+  console.log(image)
+  return card
+}
+
+async function getCardArt(cardText) {
+  cardText = cardText.replace(/ /g,"+")
+  let apiUrl = "https://api.scryfall.com/cards/named?fuzzy=" + cardText
+  const response = await fetch(apiUrl);
+  const image = await response.json()
+
+  console.log(image.image_uris.small)
 }
