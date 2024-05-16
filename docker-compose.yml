@@ -1,14 +1,24 @@
 version: "3"
 services:
+  mtg-db:
+    build: ./db-dump/
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: pass
+      MYSQL_DATABASE: db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    volumes:
+      - ./db-dump/chinook.sql:/docker-entrypoint-initdb.d/chinook.sql
+    healthcheck:
+      test: mysql -u root -p pass -c 'select 1;'
+      interval: 10s
+      retries: 20
   web:
     build: .
     ports:
       - "8080:8080"
-  db:
-    image: "mysql"
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-    ports:
-      - 3306:3306
-    volumes:
-      - ./db-dump:/docker-entrypoint-initdb.d
+    restart: always
+    depends_on:
+      - mtg-db

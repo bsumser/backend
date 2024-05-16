@@ -1,7 +1,9 @@
 import fetch from 'node-fetch';
 import express from 'express';
 import cors from 'cors';
-const PORT = process.env.PORT || 8081;
+import mysql from 'mysql2';
+
+const PORT = 8080;
 
 const app = express();
 
@@ -10,6 +12,23 @@ app.use(express.json());
 
 app.get("/message", (req, res) => {
   res.json({ message: "Hello from server!" });
+});
+
+const con = mysql.createConnection({
+  host: "backend_mtg-db_1",
+  port : '3306',
+  user: "user",
+  password: "pass",
+  dbName : 'db'
+});
+
+
+app.get("/query", (req, res) => {
+  con.connect(function(err) {
+    if (err) throw err;
+    console.log("Connected!");
+  });
+  res.json({ message: "attempt to query!" });
 });
 
 app.get("/deck/:list", (req, res) => {
