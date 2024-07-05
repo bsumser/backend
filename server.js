@@ -14,22 +14,27 @@ app.get("/message", (req, res) => {
   res.json({ message: "Hello from server!" });
 });
 
-const con = mysql.createConnection({
-  host: "backend_mtg-db_1",
-  port : '3306',
-  user: "user",
-  password: "pass",
-  dbName : 'db'
-});
-
-
-app.get("/query", (req, res) => {
-  con.connect(function(err) {
-    if (err) throw err;
-    console.log("Connected!");
-  });
-  res.json({ message: "attempt to query!" });
-});
+//const con = mysql.createConnection({
+//  host: "backend_mtg-db_1",
+//  port : '3306',
+//  user: "root",
+//  password: "pass",
+//});
+//
+//
+//app.get("/query", (req, res) => {
+//  con.connect(function(err) {
+//    if (err) throw err;
+//    console.log("Connected!");
+//  });
+//  let sql = `SELECT * FROM Customer`;
+//  let database = 'Chinook'
+//  con.query(`USE ${database}`,sql, function (err, result) {
+//    if (err) throw err;
+//    console.log("Result: " + result);
+//    res.json({ message: result });
+//  });
+//});
 
 app.get("/deck/:list", (req, res) => {
   let deck = req.params.list;
@@ -40,9 +45,11 @@ app.get("/deck/:list", (req, res) => {
     console.log(typeof(card), card)
   }
   console.log(typeof(newDeck))
-  const out = getDeck(newDeck)
-  res.end( JSON.stringify(out));
-  console.log(typeof(out))
+  let apiDeckList = getDeck(newDeck)
+  let out = getCardArtAll(apiDeckList)
+  console.log(out)
+  res.json( {re: out[0]});
+  //res.json(out[0]);
 });
 
 app.listen(PORT, () => {
@@ -51,26 +58,39 @@ app.listen(PORT, () => {
 
 function getDeck(deck) {
   const response = []
+  const apiDeckList = []
   for(let card of deck) {
-    response.push(sqlQuery(card))
+    let cardURL = prepCardURL(card)
+    apiDeckList.push(cardURL)
   }
-  return response
+
+  console.log("apiDeckList")
+  console.log(apiDeckList)
+  return apiDeckList
 }
 
-function sqlQuery(card){
+function prepCardURL(card){
   const num = card.substring(0, card.indexOf(' '))
   card = card.substring(card.indexOf(' ') + 1);
   console.log(num + " copies of " + card)
-  const image = getCardArt(card)
-  console.log(image)
-  return card
+  
+  //replace space with + for URL
+  const cardURL = "https://api.scryfall.com/cards/named?fuzzy=" + card.replace(/ /g,"+")
+  return cardURL
 }
 
-async function getCardArt(cardText) {
-  cardText = cardText.replace(/ /g,"+")
-  let apiUrl = "https://api.scryfall.com/cards/named?fuzzy=" + cardText
-  const response = await fetch(apiUrl);
-  const image = await response.json()
 
-  console.log(image.image_uris.small)
+//function to await promises for entire decklist
+async function getCardArtAll(deckList){
+
+  // Map URLs to fetch promises and store in an array
+  const fetchPromises = deckList.map(url => fetch(url).then(response => response.json()));
+  console.log(fetchPromises)
+  
+  Promise.all(fetchPromises)
+    .then(responses => {
+        const responseData = responses.map(response => response);
+        console.log(responseData)
+    })
+    .catch(error => console.error('Error fetching data:', error)); 
 }
