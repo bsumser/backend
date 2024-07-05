@@ -14,27 +14,27 @@ app.get("/message", (req, res) => {
   res.json({ message: "Hello from server!" });
 });
 
-//const con = mysql.createConnection({
-//  host: "backend_mtg-db_1",
-//  port : '3306',
-//  user: "root",
-//  password: "pass",
-//});
-//
-//
-//app.get("/query", (req, res) => {
-//  con.connect(function(err) {
-//    if (err) throw err;
-//    console.log("Connected!");
-//  });
-//  let sql = `SELECT * FROM Customer`;
-//  let database = 'Chinook'
-//  con.query(`USE ${database}`,sql, function (err, result) {
-//    if (err) throw err;
-//    console.log("Result: " + result);
-//    res.json({ message: result });
-//  });
-//});
+const con = mysql.createConnection({
+  host: "backend_mtg-db_1",
+  port : '3306',
+  user: "root",
+  password: "pass",
+});
+
+
+app.get("/query", (req, res) => {
+  con.connect(function(err) {
+    if (err) throw err;
+    console.log("Connected!");
+  });
+  let sql = `SELECT * FROM Customer`;
+  let database = 'Chinook'
+  con.query(`USE ${database}`,sql, function (err, result) {
+    if (err) throw err;
+    console.log("Result: " + result);
+    res.json({ message: result });
+  });
+});
 
 app.get("/deck/:list", (req, res) => {
   let deck = req.params.list;
