@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import mysql from 'mysql2';
 
-const PORT = 8080;
+const PORT = 8081;
 
 const app = express();
 
@@ -36,25 +36,26 @@ app.get("/message", (req, res) => {
 //  });
 //});
 
-app.get("/deck/:list", (req, res) => {
-  let deck = req.params.list;
-  deck = deck.match(/\d[^\d]*/g)
-  let newDeck = [];
-  for (const card of deck) {
-    newDeck.push(card.trim())
-    console.log(typeof(card), card)
-  }
-  console.log(typeof(newDeck))
-  let apiDeckList = getDeck(newDeck)
-  let out = getCardArtAll(apiDeckList)
-  setTimeout(function(){
-    //do what you need here
-  }, 2000);
-  console.log("return beloew")
-  out.then(data => {
-    console.log(data)
-    res.json({"message": data});
-  })
+app.get("/", (req, res) => {
+  res.json({"success": "done"});
+  //let deck = req.params.list;
+  //deck = deck.match(/\d[^\d]*/g)
+  //let newDeck = [];
+  //for (const card of deck) {
+  //  newDeck.push(card.trim())
+  //  console.log(typeof(card), card)
+  //}
+  //console.log(typeof(newDeck))
+  //let apiDeckList = getDeck(newDeck)
+  //let out = getCardArtAll(apiDeckList)
+  //setTimeout(function(){
+  //  //do what you need here
+  //}, 2000);
+  //console.log("return beloew")
+  //out.then(data => {
+  //  console.log(data)
+  //  res.json({"message": data});
+  //})
 });
 
 app.listen(PORT, () => {
