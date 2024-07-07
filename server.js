@@ -51,8 +51,10 @@ app.get("/deck/:list", (req, res) => {
     //do what you need here
   }, 2000);
   console.log("return beloew")
-  out.then(data => {console.log(data)})
-  res.json({"message": "done"});
+  out.then(data => {
+    console.log(data)
+    res.json({"message": data});
+  })
 });
 
 app.listen(PORT, () => {
