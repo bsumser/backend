@@ -14,27 +14,27 @@ app.get("/message", (req, res) => {
   res.json({ message: "Hello from server!" });
 });
 
-const con = mysql.createConnection({
-  host: "backend_mtg-db_1",
-  port : '3306',
-  user: "root",
-  password: "pass",
-});
-
-
-app.get("/query", (req, res) => {
-  con.connect(function(err) {
-    if (err) throw err;
-    console.log("Connected!");
-  });
-  let sql = `SELECT * FROM Customer`;
-  let database = 'Chinook'
-  con.query(`USE ${database}`,sql, function (err, result) {
-    if (err) throw err;
-    console.log("Result: " + result);
-    res.json({ message: result });
-  });
-});
+//const con = mysql.createConnection({
+//  host: "backend_mtg-db_1",
+//  port : '3306',
+//  user: "root",
+//  password: "pass",
+//});
+//
+//
+//app.get("/query", (req, res) => {
+//  con.connect(function(err) {
+//    if (err) throw err;
+//    console.log("Connected!");
+//  });
+//  let sql = `SELECT * FROM Customer`;
+//  let database = 'Chinook'
+//  con.query(`USE ${database}`,sql, function (err, result) {
+//    if (err) throw err;
+//    console.log("Result: " + result);
+//    res.json({ message: result });
+//  });
+//});
 
 app.get("/deck/:list", (req, res) => {
   let deck = req.params.list;
@@ -47,9 +47,12 @@ app.get("/deck/:list", (req, res) => {
   console.log(typeof(newDeck))
   let apiDeckList = getDeck(newDeck)
   let out = getCardArtAll(apiDeckList)
-  console.log(out)
-  res.json( {re: out[0]});
-  //res.json(out[0]);
+  setTimeout(function(){
+    //do what you need here
+  }, 2000);
+  console.log("return beloew")
+  out.then(data => {console.log(data)})
+  res.json({"message": "done"});
 });
 
 app.listen(PORT, () => {
@@ -85,12 +88,12 @@ async function getCardArtAll(deckList){
 
   // Map URLs to fetch promises and store in an array
   const fetchPromises = deckList.map(url => fetch(url).then(response => response.json()));
-  console.log(fetchPromises)
   
-  Promise.all(fetchPromises)
-    .then(responses => {
-        const responseData = responses.map(response => response);
-        console.log(responseData)
-    })
-    .catch(error => console.error('Error fetching data:', error)); 
+  let allPromise = Promise.all(fetchPromises);
+  try {
+    let out = await allPromise;
+    return out;
+  } catch (error) {
+    console.log(error);
+  }
 }
