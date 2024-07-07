@@ -38,14 +38,14 @@ app.get("/message", (req, res) => {
 
 app.get("/", (req, res) => {
   console.log(req.query.deck)
-  res.json({"success": "done"});
-  //let deck = req.params.list;
-  //deck = deck.match(/\d[^\d]*/g)
-  //let newDeck = [];
-  //for (const card of deck) {
-  //  newDeck.push(card.trim())
-  //  console.log(typeof(card), card)
-  //}
+  let deck = req.query.deck;
+  deck = deck.match(/\d[^\d]*/g)
+  console.log(deck)
+  let newDeck = [];
+  for (const card of deck) {
+    newDeck.push(card.trim())
+    console.log(typeof(card), card)
+  }
   //console.log(typeof(newDeck))
   //let apiDeckList = getDeck(newDeck)
   //let out = getCardArtAll(apiDeckList)
@@ -57,6 +57,7 @@ app.get("/", (req, res) => {
   //  console.log(data)
   //  res.json({"message": data});
   //})
+  res.json({"success": "done"});
 });
 
 app.listen(PORT, () => {
