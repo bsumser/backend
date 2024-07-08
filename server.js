@@ -46,18 +46,26 @@ app.get("/", (req, res) => {
     newDeck.push(card.trim())
     console.log(typeof(card), card)
   }
-  //console.log(typeof(newDeck))
-  //let apiDeckList = getDeck(newDeck)
-  //let out = getCardArtAll(apiDeckList)
-  //setTimeout(function(){
-  //  //do what you need here
-  //}, 2000);
-  //console.log("return beloew")
-  //out.then(data => {
+  console.log(typeof(newDeck))
+  let apiDeckList = getDeck(newDeck)
+  let out = getCardArtAll(apiDeckList)
+  setTimeout(function(){
+    //do what you need here
+  }, 2000);
+  console.log("return beloew")
+  out.then(function(cards) {
+    res.json(cards.map(function(card) {
+      return {
+        name : card.name,
+        color : card.color_identity,
+      }
+    }));
+  }).catch(function(err) {console.error(err);});
+
+  //out.then((data) => {
   //  console.log(data)
   //  res.json({"message": data});
   //})
-  res.json({"success": "done"});
 });
 
 app.listen(PORT, () => {
