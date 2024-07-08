@@ -36,9 +36,10 @@ app.get("/message", (req, res) => {
 //  });
 //});
 
-app.get("/", (req, res) => {
-  res.json({"message": "success"});
-  //console.log(req.query.deck)
+app.get("/deck", (req, res) => {
+  let deck = req.query.deck
+  console.log(req.query.deck)
+  res.json({"message": deck});
   //let deck = req.query.deck;
   //deck = deck.match(/\d[^\d]*/g)
   //console.log(deck)
