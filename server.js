@@ -51,20 +51,20 @@ app.get("/deck", (req, res) => {
     console.log(cur_card)
   }
   let apiDeckList = getDeck(newDeck)
-  //let out = getCardArtAll(apiDeckList)
-  //setTimeout(function(){
-  //  //do what you need here
-  //}, 2000);
-  //console.log("return beloew")
-  //out.then(function(cards) {
-  //  res.json(cards.map(function(card) {
-  //    return {
-  //      name : card.name,
-  //      color : card.color_identity,
-  //    }
-  //  }));
-  //}).catch(function(err) {console.error(err);});
-  res.json({"message": "deck sent"});
+  let out = getCardArtAll(apiDeckList)
+  setTimeout(function(){
+    //do what you need here
+  }, 2000);
+  console.log("return beloew")
+  out.then(function(cards) {
+    res.json(cards.map(function(card) {
+      return {
+        name : card.name,
+        color : card.color_identity,
+      }
+    }));
+  }).catch(function(err) {console.error(err);});
+  //res.json({"message": "deck sent"});
 });
 
 app.listen(PORT, () => {
