@@ -37,20 +37,20 @@ app.get("/message", (req, res) => {
 //});
 
 app.get("/deck", (req, res) => {
-  console.log(req.query)
-  //let deck = req.query
-  //console.log(req.query.deck)
-  res.json({"message": "deck sent"});
-  //let deck = req.query.deck;
-  //deck = deck.match(/\d[^\d]*/g)
-  //console.log(deck)
-  //let newDeck = [];
-  //for (const card of deck) {
-  //  newDeck.push(card.trim())
-  //  console.log(typeof(card), card)
-  //}
-  //console.log(typeof(newDeck))
-  //let apiDeckList = getDeck(newDeck)
+  let deck = req.originalUrl
+  deck = deck.replace("/deck?", "");
+  deck = deck.replace(/%27/g, "'");
+  deck = deck.replace(/%20/g, " ");
+  deck = deck.split(/(?<=\d)(?=[A-Za-z])|(?<=[A-Za-z])(?=\d)/);
+  console.log(deck)
+  let newDeck = [];
+  for (const card of deck) {
+    const split = card.split(/ (.*)/);
+    let cur_card = [split[0], split[1]]
+    newDeck.push(cur_card)
+    console.log(cur_card)
+  }
+  let apiDeckList = getDeck(newDeck)
   //let out = getCardArtAll(apiDeckList)
   //setTimeout(function(){
   //  //do what you need here
@@ -64,7 +64,7 @@ app.get("/deck", (req, res) => {
   //    }
   //  }));
   //}).catch(function(err) {console.error(err);});
-
+  res.json({"message": "deck sent"});
 });
 
 app.listen(PORT, () => {
@@ -72,10 +72,9 @@ app.listen(PORT, () => {
 });
 
 function getDeck(deck) {
-  const response = []
   const apiDeckList = []
   for(let card of deck) {
-    let cardURL = prepCardURL(card)
+    let cardURL = prepCardURL(card[1])
     apiDeckList.push(cardURL)
   }
 
