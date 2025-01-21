@@ -1,2 +1,2 @@
-*.crt
-*.ENV
+ca-certificate.crt
+database.env
