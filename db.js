@@ -14,11 +14,11 @@ app.use(cors());
 
 // PostgreSQL connection pool
 const pool = new Pool({
-  user: 'doadmin',
-  host: 'db-postgresql-sfo2-25663-do-user-18598486-0.m.db.ondigitalocean.com',
-  database: 'mtg-db',
-  password: 'AVNS_7SdIOrC3B_XSH_SRw86',
-  port: 25060, // Default PostgreSQL port
+  user: process.env.POSTGRES_USER,
+  host: process.env.POSTGRES_HOST,
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASS,
+  port: process.env.POSTGRES_PORT, // Default PostgreSQL port
   ssl: {
     rejectUnauthorized: false,
     cert: fs.readFileSync('./ca-certificate.crt').toString(),
