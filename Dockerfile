@@ -23,7 +23,7 @@ WORKDIR /app
 COPY --from=builder /app /app
 
 # Copy SSL certificate
-COPY ca-certificate.crt /app/ca-certificate.crt
+COPY ca-certificate.crt /ssl/ca-certificate.crt
 
 # Install OpenSSL for PostgreSQL SSL support
 RUN apk add --no-cache openssl
