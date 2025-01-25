@@ -64,9 +64,27 @@ app.get('/deck', async (req, res) => {
   }
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.get('/card', async (req, res) => {
+  try {
+    let card = req.originalUrl;
+    deck = deck.replace('/card?', '');
+    deck = decodeURIComponent(deck);
+    console.log(deck);
+
+    const out = await getCardArtAll(deck);
+
+    // Map card data to desired response format
+    const response = out.map((card) => ({
+      name: card.name,
+      color: card.colors,
+      type: card.type
+    }));
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error processing deck:', error);
+    res.status(500).json({ error: 'Failed to process deck' });
+  }
 });
 
 // Function to query PostgreSQL for card art data
@@ -98,6 +116,11 @@ async function getCardArtAll(deckList) {
     throw error; // Rethrow to allow calling code to handle
   }
 }
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 
 //function prepCardURL(card){
