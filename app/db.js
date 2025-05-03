@@ -50,12 +50,8 @@ app.get('/deck', async (req, res) => {
 
     const out = await getCardArtAll(newDeck);
 
-    // Map card data to desired response format
-    const response = out.map((card) => ({
-      name: card.name,
-      color: card.colors,
-      type: card.type
-    }));
+    // Return entire card objects
+    const response = out.map((card) => card);
 
     res.json(response);
   } catch (error) {
@@ -73,17 +69,13 @@ app.get('/card', async (req, res) => {
 
     const out = await getCardArtAll(deck);
 
-    // Map card data to desired response format
-    const response = out.map((card) => ({
-      name: card.name,
-      color: card.colors,
-      type: card.type
-    }));
+    // Return entire card objects
+    const response = out.map((card) => card);
 
     res.json(response);
   } catch (error) {
-    console.error('Error processing deck:', error);
-    res.status(500).json({ error: 'Failed to process deck' });
+    console.error('Error processing card:', error);
+    res.status(500).json({ error: 'Failed to process card' });
   }
 });
 
@@ -121,15 +113,3 @@ async function getCardArtAll(deckList) {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-
-//function prepCardURL(card){
-//  const num = card.substring(0, card.indexOf(' '))
-//  card = card.substring(card.indexOf(' ') + 1);
-//  console.log(num + " copies of " + card)
-//  
-//  //replace space with + for URL
-//  const cardURL = "https://api.scryfall.com/cards/named?fuzzy=" + card.replace(/ /g,"+")
-//  return cardURL
-//}
-//
