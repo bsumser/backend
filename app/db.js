@@ -109,6 +109,22 @@ async function getCardArtAll(deckList) {
   }
 }
 
+// Health check route
+app.get('/health', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT 1');
+    if (result) {
+      res.status(200).send('OK');
+    } else {
+      res.status(500).send('DB not responding');
+    }
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).send('Error connecting to DB');
+  }
+});
+
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
