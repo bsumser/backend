@@ -7,12 +7,17 @@ services:
       dockerfile: Dockerfile
     container_name: mtg-node
     ports:
-      - "8080:8080" # Internal Node.js app port
+      - "8080:8080"
     env_file:
       - database.env
     volumes:
       - ./app:/app
       - ./ca-certificate.crt:/app/ca-certificate.crt
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   nginx:
     image: nginx:latest
