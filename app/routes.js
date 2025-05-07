@@ -9,5 +9,9 @@ const router = express.Router();
 router.get('/health', healthCheck);
 router.get('/deck', processDeck);
 router.get('/card', processCard);
+// ✅ Base route
+router.get('/', (req, res) => {
+  res.json({ info: 'Node.js, Express, and Postgres API' });
+});
 
 export default router;
