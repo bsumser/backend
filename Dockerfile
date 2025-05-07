@@ -1,39 +1,42 @@
 # Stage 1: Build stage
 FROM node:18-alpine as builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY app/package*.json ./
+# Copy the app's package.json and its own package-lock.json
+COPY app/package.json ./package.json
+# Ensures we use the lock file corresponding to the app's package.json
+COPY app/package-lock.json ./package-lock.json 
 
-# Install dependencies
+# Install only production dependencies based on the app's package files
 RUN npm install --production
 
-# Copy the application source code
-COPY app /app
+# Copy full application code from the app directory into /app in the builder
+# This ensures server.js, app.js, etc., are present alongside node_modules
+COPY app/ .
 
-# Stage 2: Production stage
+# Stage 2: Final image
 FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy dependencies and application source code from the builder stage
+# Copy the entire built application (code + node_modules) from the builder stage
 COPY --from=builder /app /app
 
-# Copy SSL certificate
+# Handle CA certificate
+# The original Dockerfile copied ca-certificate.crt from the project root to /ssl/ca-certificate.crt.
+# Your app/ directory also contains a ca-certificate.crt, which will be copied to /app/ca-certificate.crt
+# by the COPY --from=builder /app /app line.
+# You need to ensure your application is configured to use the correct certificate.
+# If it's supposed to use the one from the project root, placed in /ssl/:
 COPY ca-certificate.crt /ssl/ca-certificate.crt
+# If your app reads it from its own directory (e.g., /app/ca-certificate.crt), that's already handled.
 
-# Install OpenSSL for PostgreSQL SSL support
 RUN apk add --no-cache openssl
 
-# Expose port
-EXPOSE 8080
+EXPOSE 8081
 
-# Set environment variables
 ENV NODE_ENV=production
-ENV PORT=8080
+ENV PORT=8081
 
-# Command to run the application
-CMD ["node", "db.js"]
+CMD ["node", "server.js"]

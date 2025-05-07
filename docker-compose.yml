@@ -7,14 +7,14 @@ services:
       dockerfile: Dockerfile
     container_name: mtg-node
     ports:
-      - "8080:8080"
+      - "8081:8081"
     env_file:
       - database.env
     volumes:
       - ./app:/app
       - ./ca-certificate.crt:/app/ca-certificate.crt
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]  # Make sure the health check uses the correct port
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,3 +28,4 @@ services:
       - "80:80"
     depends_on:
       - mtg-node
+    restart: on-failure
