@@ -27,6 +27,7 @@ describe('GET /health', () => {
   });
 });
 
+
 describe('GET /deck', () => {
   it('should return 400 for an invalid deck', async () => {
     const response = await request(app).get('/deck?invalid');
@@ -38,5 +39,13 @@ describe('GET /deck', () => {
     const response = await request(app).get(`/deck?deck=${deckQuery}`);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+  });
+});
+
+describe('Process Malformed Deck', () => {
+  it('should return a status 200 when the server is up', async () => {
+    const response = await request(app).('/health');
+    expect(response.status).toBe(500);
+    expect(response.text).toBe('Failed to process deck');
   });
 });
