@@ -43,11 +43,11 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy app via SSH
+      - name: Deploy via SSH with Docker Compose
         run: |
           ssh -i ~/.ssh/id_ed25519 root@${{ secrets.DROPLET_HOST }} << 'EOF'
-            cd /path/to/your/app
+            cd ~/backend/ || exit 1
             git pull origin master
-            npm install
-            pm2 restart your-app-name
+            docker-compose pull
+            docker-compose up -d --build
           EOF
