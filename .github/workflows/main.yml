@@ -46,10 +46,17 @@ jobs:
       - name: Deploy via SSH with Docker Compose
         run: |
           ssh -i ~/.ssh/id_ed25519 root@${{ secrets.DROPLET_HOST }} << 'EOF'
-            # Add GitHub's host key to the droplet's known_hosts if it's not there
+            # Ensure GitHub's host key is trusted (from previous fix)
             ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-
+      
             cd ~/backend/ || exit 1
+      
+            # --- NEW LINES ADDED HERE ---
+            # Discard any local changes and untracked files to ensure a clean state
+            git reset --hard origin/master
+            git clean -df
+            # --- END NEW LINES ---
+      
             git pull origin master
             docker-compose pull
             docker-compose up -d --build
