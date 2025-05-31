@@ -4,7 +4,7 @@ import { getCardArtAll } from '../services/cardArtService.js';
 export async function processDeck(req, res) {
   try {
     const rawDeck = req.query.deck;
-    console.log('Raw deck:', rawDeck); // Step 1
+    console.log(`Raw deck ${rawDeck}`); // Step 1
 
     if (!rawDeck) {
       console.log('❌ Missing deck parameter');
@@ -32,7 +32,7 @@ export async function processDeck(req, res) {
         }
     }
 
-    console.log('Parsed deck:', parsedDeck); // Step 2
+    console.log(`Parsed deck ${parsedDeck}`); // Step 2
 
     if (parsedDeck.length === 0) {
       console.log('❌ No valid card entries after parsing');
@@ -40,10 +40,10 @@ export async function processDeck(req, res) {
     }
 
     const cardNames = parsedDeck.map(c => c.name);
-    console.log('Fetching card art for:', cardNames); // Step 3
+    console.log(`Fetching card art for ${cardNames}`); // Step 3
 
     const cardData = await getCardArtAll(cardNames);
-    console.log('Fetched card data:', cardData); // Step 4
+    console.log(`Fetched card data ${cardData}`); // Step 4
 
     const response = parsedDeck.map(({ name, count }) => {
       const match = cardData.find(c => c.name.toLowerCase() === name.toLowerCase());
@@ -54,11 +54,11 @@ export async function processDeck(req, res) {
       return { ...match, count };
     }).filter(Boolean);
 
-    console.log('Final response:', response); // Step 5
+    console.log(`Final response ${response}`); // Step 5
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Error processing deck:', error);
+    console.error(`❌ Error processing deck ${error}`);
     res.status(500).json({ error: 'Failed to process deck' });
   }
 }
