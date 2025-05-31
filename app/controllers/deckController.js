@@ -36,40 +36,52 @@ export async function processDeck(req, res) {
 
     if (parsedDeck.length === 0) {
       console.log('❌ No valid card entries after parsing');
-      return res.status(400).json({ error: 'No valid card entries found' });
+      return res.status(500).json({ error: 'No valid card entries found' });
     }
 
     const cardNames = parsedDeck.map(c => c.name);
     console.log(`Fetching card art for ${cardNames}`); // Step 3
 
     const cardData = await getCardArtAll(cardNames);
-    
+
     const fetchedCards = parsedDeck.map(c => {
-        const match = cardData.find(dbCard => {
-            // Use dbCard.facename for comparison if it exists, otherwise fall back to dbCard.name
-            const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
-            const lowerInputName = c.name.toLowerCase(); // This is the name from your parsed input (e.g., "Fable of the Mirror-Breaker")
-        
-            // Now, perform the exact match comparison
-            return lowerDbNameForComparison === lowerInputName;
-        });
-    
-        if (!match) {
-            console.error(`❌ No match found for card: ${c.name}`);
-            return null; // Return null for cards that don't match, to be filtered out later
+            const match = cardData.find(dbCard => {
+                const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
+                const lowerInputName = c.name.toLowerCase();
+                return lowerDbNameForComparison === lowerInputName;
+            });
+
+            if (!match) {
+                // This console.error is for debugging purposes, it doesn't stop execution
+                console.error(`❌ No match found for card: ${c.name}`);
+                return null; // Return null for cards that don't match, to be filtered out
+            }
+            return {
+                count: c.count,
+                name: match.name, // Use the full name from the DB
+                image: match.image_uris, // Use the fetched image URIs
+            };
+        }).filter(Boolean); // This filters out any 'null' values, resulting in an array of only matched cards
+
+        // *** ADD THIS NEW BLOCK OF CODE HERE ***
+        if (fetchedCards.length === 0) {
+            // If after processing, no cards were successfully matched and fetched,
+            // return a 404 (Not Found) or 400 (Bad Request) status.
+            console.log('❌ No matching cards found for the provided input in the database.');
+            return res.status(404).json({ error: 'No matching cards found for the provided input.' });
         }
-        return {
-            count: c.count,
-            name: match.name,       // Use the full name from the DB (e.g., "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki")
-            image: match.image_uris, // Use the fetched image URIs
+        // *** END NEW BLOCK ***
+
+        // This 'response' variable will now only be defined if fetchedCards is not empty
+        const response = {
+            deck: fetchedCards
         };
-    }).filter(Boolean); // This line filters out any 'null' values from the map, ensuring only matched cards are processed.
 
-    console.log(`Final response ${response}`); // Step 5
+        res.json(response); // This is likely the line that was previously throwing the ReferenceError (e.g., line 70)
 
-    res.json(response);
-  } catch (error) {
-    console.error(`❌ Error processing deck ${error}`);
-    res.status(500).json({ error: 'Failed to process deck' });
-  }
+      } catch (error) {
+        // This catch block handles other unexpected errors during deck processing
+        console.error(`❌ Error processing deck ${error}`); // (e.g., line 72)
+        res.status(500).json({ error: 'Failed to process deck' });
+      }
 }
