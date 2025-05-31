@@ -46,18 +46,30 @@ jobs:
       - name: Deploy via SSH with Docker Compose
         run: |
           ssh -i ~/.ssh/id_ed25519 root@${{ secrets.DROPLET_HOST }} << 'EOF'
-            # Ensure GitHub's host key is trusted (from previous fix)
+            # Ensure GitHub's host key is trusted
             ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
       
             cd ~/backend/ || exit 1
       
-            # --- NEW LINES ADDED HERE ---
             # Discard any local changes and untracked files to ensure a clean state
             git reset --hard origin/master
             git clean -df
-            # --- END NEW LINES ---
+      
+            # --- NEW STEPS FOR DOCKER COMPOSE UPDATE AND CLEANUP ---
+            # Update package lists and install the Docker Compose plugin
+            # The plugin uses the 'docker compose' command (note the space)
+            sudo apt update
+            sudo apt install -y docker-compose-plugin
+      
+            # Clean up dangling images, containers, volumes, and networks
+            # This helps prevent issues from previous failed builds or old states.
+            docker system prune -af
+            # --- END NEW STEPS ---
       
             git pull origin master
-            docker-compose pull
-            docker-compose up -d --build
+      
+            # --- IMPORTANT: Use 'docker compose' (with a space) now ---
+            docker compose pull
+            docker compose up -d --build
+            # --- END IMPORTANT ---
           EOF
