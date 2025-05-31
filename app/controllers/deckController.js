@@ -43,16 +43,27 @@ export async function processDeck(req, res) {
     console.log(`Fetching card art for ${cardNames}`); // Step 3
 
     const cardData = await getCardArtAll(cardNames);
-    console.log(`Fetched card data ${cardData}`); // Step 4
-
-    const response = parsedDeck.map(({ name, count }) => {
-      const match = cardData.find(c => c.name.toLowerCase() === name.toLowerCase());
-      if (!match) {
-        console.log(`❌ No match found for card: ${name}`);
-        return null;
-      }
-      return { ...match, count };
-    }).filter(Boolean);
+    
+    const fetchedCards = parsedDeck.map(c => {
+        const match = cardData.find(dbCard => {
+            // Use dbCard.facename for comparison if it exists, otherwise fall back to dbCard.name
+            const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
+            const lowerInputName = c.name.toLowerCase(); // This is the name from your parsed input (e.g., "Fable of the Mirror-Breaker")
+        
+            // Now, perform the exact match comparison
+            return lowerDbNameForComparison === lowerInputName;
+        });
+    
+        if (!match) {
+            console.error(`❌ No match found for card: ${c.name}`);
+            return null; // Return null for cards that don't match, to be filtered out later
+        }
+        return {
+            count: c.count,
+            name: match.name,       // Use the full name from the DB (e.g., "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki")
+            image: match.image_uris, // Use the fetched image URIs
+        };
+    }).filter(Boolean); // This line filters out any 'null' values from the map, ensuring only matched cards are processed.
 
     console.log(`Final response ${response}`); // Step 5
 
