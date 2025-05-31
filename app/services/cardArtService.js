@@ -164,20 +164,30 @@ const mockDatabase = [
 export async function getCardArtAll(names) {
   if (process.env.NODE_ENV === 'test') {
     console.log('✅ Using mocked card data in test');
+    console.log('DEBUG: getCardArtAll received names for lookup:', names); // IMPORTANT LOG
 
-    // Filter the mock database to return only the cards requested by the controller
-    return names.map(inputName => {
+    const results = names.map(inputName => {
       const lowerInputName = inputName.toLowerCase();
       const foundCard = mockDatabase.find(mockCard => {
         const lowerMockFacename = mockCard.facename ? mockCard.facename.toLowerCase() : null;
         const lowerMockName = mockCard.name.toLowerCase();
 
-        // Match logic: prioritize facename, then full name
-        return lowerMockFacename === lowerInputName || lowerMockName === lowerInputName;
+        const isMatch = lowerMockFacename === lowerInputName || lowerMockName === lowerInputName;
+        // console.log(`DEBUG: MOCK FIND: Input "${lowerInputName}" vs Mock { facename: "${lowerMockFacename}", name: "${lowerMockName}" }. Match: ${isMatch}`); // UNCOMMENT FOR DEEPEST DEBUG
+        return isMatch;
       });
 
-      return foundCard || null; // Return the found mock card object or null if not found
-    }).filter(Boolean); // Filter out any nulls if cards weren't found in mock
+      if (!foundCard) {
+        console.error(`DEBUG: getCardArtAll mock did NOT find: "${inputName}" in mockDatabase.`); // IMPORTANT LOG
+      } else {
+        // console.log(`DEBUG: getCardArtAll mock FOUND: "${inputName}" ->`, foundCard.name); // IMPORTANT LOG
+      }
+
+      return foundCard || null;
+    }).filter(Boolean); // Crucial: filters out any nulls before returning
+
+    console.log('DEBUG: getCardArtAll returning:', results.map(r => r.name)); // IMPORTANT LOG
+    return results;
   }
 
   // Production code:

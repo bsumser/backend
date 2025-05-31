@@ -40,26 +40,41 @@ export async function processDeck(req, res) {
     }
 
     const cardNames = parsedDeck.map(c => c.name);
-    console.log(`Fetching card art for ${cardNames}`); // Step 3
+    console.log('Fetching card art for', cardNames.join(',')); // Already there
 
     const cardData = await getCardArtAll(cardNames);
 
+    // <<< ADD THIS LINE BELOW >>>
+    console.log('DEBUG: cardData received from getCardArtAll (mock):', cardData.map(c => c ? c.name : 'NULL_CARD'));
+    // <<< ADD THIS LINE ABOVE >>>
+
     const fetchedCards = parsedDeck.map(c => {
+        const lowerInputName = c.name.toLowerCase(); // Card name from the parsed deck
         const match = cardData.find(dbCard => {
-            // ... (your existing comparison logic, which works) ...
+            // Check if dbCard itself is null/undefined before accessing properties
+            if (!dbCard) {
+                console.error(`DEBUG: dbCard is null/undefined during find for input: ${c.name}. This indicates getCardArtAll returned null.`);
+                return false;
+            }
+            const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
+
+            const isMatch = lowerDbNameForComparison === lowerInputName;
+            // You can uncomment the deeper debug log if needed after the first one
+            // console.log(`DEBUG: CONTROLLER find: Input "${lowerInputName}" vs DB Card { facename: "${dbCard.facename}", name: "${dbCard.name}" }. Match: ${isMatch}`);
+            return isMatch;
         });
-    
+
         if (!match) {
-            console.error(`❌ No match found for card: ${c.name}`);
+            console.error(`❌ No match found for card: ${c.name}`); // Already there
             return null; // Card not found in DB
         }
-    
+
         // *** CHANGE THIS RETURN STATEMENT ***
         return {
             count: c.count, // Keep the count from the input deck
             ...match,       // SPREAD ALL PROPERTIES FROM THE `match` OBJECT (the full DB result)
         };
-    }).filter(Boolean); // Filters out any nulls if a card wasn't found
+        }).filter(Boolean); // Filters out any nulls if a card wasn't found
 
         // *** ADD THIS NEW BLOCK OF CODE HERE ***
         if (fetchedCards.length === 0) {
