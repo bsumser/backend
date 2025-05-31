@@ -9,6 +9,6 @@ export async function getCardArtAll(names) {
     }));
   }
 
-  const results = await Promise.all(names.map(name => getCardByName(name)));
-  return results.filter(Boolean);
+    const results = await Promise.all(names.map(name => getCardByName(name)));
+    return results.filter(Boolean); // THIS LINE IS CRITICAL
 }
