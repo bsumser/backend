@@ -28,48 +28,51 @@ jobs:
         run: npm test
 
   deploy:
-    name: Deploy to DigitalOcean
-    runs-on: ubuntu-latest
-    needs: test            # Only runs if "test" job passes
-    if: github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      name: Deploy to DigitalOcean
+      runs-on: ubuntu-latest
+      needs: test
+      if: github.ref == 'refs/heads/master'
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
+        - name: Setup SSH
+          run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan -H ${{ secrets.DROPLET_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH with Docker Compose
-        run: |
-          ssh -i ~/.ssh/id_ed25519 root@${{ secrets.DROPLET_HOST }} << 'EOF'
-            # Ensure GitHub's host key is trusted
-            ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-      
-            cd ~/backend/ || exit 1
-      
-            # Discard any local changes and untracked files to ensure a clean state
-            git reset --hard origin/master
-            git clean -df
-      
-            # --- NEW STEPS FOR DOCKER COMPOSE UPDATE AND CLEANUP ---
-            # Update package lists and install the Docker Compose plugin
-            # The plugin uses the 'docker compose' command (note the space)
-            sudo apt update
-            sudo apt install -y docker-compose-plugin
-      
-            # Clean up dangling images, containers, volumes, and networks
-            # This helps prevent issues from previous failed builds or old states.
-            docker system prune -af
-            # --- END NEW STEPS ---
-      
-            git pull origin master
-      
-            # --- IMPORTANT: Use 'docker compose' (with a space) now ---
-            docker compose pull
-            docker compose up -d --build
-            # --- END IMPORTANT ---
-          EOF
+        - name: Deploy via SSH with Docker Compose
+          run: |
+            ssh -i ~/.ssh/id_ed25519 root@${{ secrets.DROPLET_HOST }} << 'EOF'
+              # Ensure GitHub's host key is trusted
+              ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+          
+              cd ~/backend/ || exit 1
+          
+              # Discard any local changes and untracked files to ensure a clean state
+              git reset --hard origin/master
+              git clean -df
+          
+              # --- UPDATED DOCKER COMPOSE INSTALLATION ---
+              # Remove apt install for docker-compose-plugin as it's not found.
+              # Instead, install the latest standalone docker-compose binary.
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              # Optional: Verify the version installed (good for debugging)
+              /usr/local/bin/docker-compose version
+              # --- END UPDATED DOCKER COMPOSE INSTALLATION ---
+          
+              # Clean up dangling images, containers, volumes, and networks
+              # This helps prevent issues from previous failed builds or old states.
+              docker system prune -af
+          
+              git pull origin master
+          
+              # --- IMPORTANT: Use 'docker-compose' (with a hyphen) now ---
+              # Use the full path to ensure the newly installed binary is used
+              /usr/local/bin/docker-compose pull
+              /usr/local/bin/docker-compose up -d --build
+              # --- END IMPORTANT ---
+            EOF
