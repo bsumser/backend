@@ -73,6 +73,6 @@ jobs:
               # --- IMPORTANT: Use 'docker-compose' (with a hyphen) now ---
               # Use the full path to ensure the newly installed binary is used
               /usr/local/bin/docker-compose pull
-              /usr/local/bin/docker-compose up -d --build
+              /usr/local/bin/docker-compose up -d --build --force-recreate
               # --- END IMPORTANT ---
             EOF
