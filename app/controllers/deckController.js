@@ -45,23 +45,21 @@ export async function processDeck(req, res) {
     const cardData = await getCardArtAll(cardNames);
 
     const fetchedCards = parsedDeck.map(c => {
-            const match = cardData.find(dbCard => {
-                const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
-                const lowerInputName = c.name.toLowerCase();
-                return lowerDbNameForComparison === lowerInputName;
-            });
-
-            if (!match) {
-                // This console.error is for debugging purposes, it doesn't stop execution
-                console.error(`❌ No match found for card: ${c.name}`);
-                return null; // Return null for cards that don't match, to be filtered out
-            }
-            return {
-                count: c.count,
-                name: match.name, // Use the full name from the DB
-                image: match.image_uris, // Use the fetched image URIs
-            };
-        }).filter(Boolean); // This filters out any 'null' values, resulting in an array of only matched cards
+        const match = cardData.find(dbCard => {
+            // ... (your existing comparison logic, which works) ...
+        });
+    
+        if (!match) {
+            console.error(`❌ No match found for card: ${c.name}`);
+            return null; // Card not found in DB
+        }
+    
+        // *** CHANGE THIS RETURN STATEMENT ***
+        return {
+            count: c.count, // Keep the count from the input deck
+            ...match,       // SPREAD ALL PROPERTIES FROM THE `match` OBJECT (the full DB result)
+        };
+    }).filter(Boolean); // Filters out any nulls if a card wasn't found
 
         // *** ADD THIS NEW BLOCK OF CODE HERE ***
         if (fetchedCards.length === 0) {
