@@ -24,6 +24,7 @@ services:
     container_name: nginx
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./mtg_images:/usr/share/nginx/html/static/images:ro # ✅ ADD THIS: Mount host's ./mtg_images to Nginx
     ports:
       - "80:80"
     depends_on:
