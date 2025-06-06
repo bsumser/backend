@@ -1,2 +1,4 @@
 ca-certificate.crt
 database.env
+*.sql
+*.psql

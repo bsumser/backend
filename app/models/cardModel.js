@@ -14,42 +14,57 @@ export async function getCardByName(name) {
     console.warn(`[getCardByName] WARNING: PUBLIC_IMAGE_BASE_URL environment variable is not set. Cannot generate art URLs.`);
   }
 
-  try {
-    // Your existing flexible query.
-    // SELECT * should retrieve all columns, including 'image_filename' if it exists.
-    const result = await db.query(
-      `SELECT * FROM cards
-       WHERE LOWER(name) = LOWER($1)
-          OR LOWER(name) LIKE LOWER($1) || ' //%'
-       LIMIT 1;`,
-      [name]
-    );
-
-    const card = result.rows[0] || null;
-
-    if (card) {
-      // If a card is found, attempt to add the artUrl
-      if (publicImageBaseUrl && card.image_filename) {
-        // Construct the full URL
-        // .replace(/\/$/, '') ensures no double slash if publicImageBaseUrl already ends with one
-        card.artUrl = `${publicImageBaseUrl.replace(/\/$/, '')}/${card.image_filename}`;
-        console.log(`[getCardByName] Successfully added artUrl for "${card.name}": ${card.artUrl}`);
-      } else {
-        // If no base URL or no image_filename, set artUrl to null
-        card.artUrl = null;
-        if (!card.image_filename) {
-          console.log(`[getCardByName] No image_filename found for card "${card.name}". artUrl set to null.`);
-        }
-      }
-    }
+    try {
+        const publicImageBaseUrl = process.env.PUBLIC_IMAGE_BASE_URL;
     
-    console.log(`[getCardByName] Debug: Final card object for "${name}":`, card); 
-    return card; // Return the card object (now potentially with an artUrl property) or null
-
-  } catch (error) {
-    console.error(`[getCardByName] Error querying database for card name "${name}":`, error);
-    // Depending on your error handling strategy, you might want to re-throw the error
-    // or return null to indicate failure.
-    throw error; // Or return null;
-  }
+        // ✅ UPDATED QUERY:
+        // This query joins 'cards' with 'card_images' and uses json_agg
+        // to collect all matching image filenames into a single JSON array field.
+        const query = `
+          SELECT
+            c.*,
+            (
+              SELECT json_agg(ci.image_filename)
+              FROM card_images AS ci
+              WHERE ci.card_id = c.id
+            ) AS image_filenames
+          FROM
+            cards AS c
+          WHERE
+            LOWER(c.name) = LOWER($1)
+            OR LOWER(c.name) LIKE LOWER($1) || ' //%'
+          LIMIT 1;
+        `;
+    
+        const result = await db.query(query, [name]);
+        const card = result.rows[0] || null;
+    
+        // ✅ NEW LOGIC to process the array of filenames
+        if (card) {
+          // The 'image_filenames' property will be an array (e.g., ["file1.jpg", "file2.png"])
+          // or null if no images were found for that card.
+        
+          // We will create a new 'artUrls' array to hold the full URLs.
+          card.artUrls = []; // Always create the array for consistent API responses
+        
+          if (publicImageBaseUrl && card.image_filenames && Array.isArray(card.image_filenames)) {
+            card.artUrls = card.image_filenames.map(filename => 
+              `${publicImageBaseUrl.replace(/\/$/, '')}/${filename}`
+            );
+          }
+          
+          // For a cleaner API response, we can remove the raw image_filenames field
+          delete card.image_filenames;
+        }
+    
+        // Now, the 'card' object will have an 'artUrls' array property.
+        // Your controller can then return this 'card' object in the response.
+        // For example:
+        // res.json(card);
+    
+    } catch (error) {
+        console.error(`Error processing card name "${name}":`, error);
+        // Handle the error appropriately in your API
+        // res.status(500).json({ error: 'Internal server error' });
+    }
 }
