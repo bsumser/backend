@@ -2,34 +2,38 @@ import { raw } from 'express';
 import { getCardArtAll } from '../services/cardArtService.js';
 
 export async function processDeck(req, res) {
-  try {
-    const rawDeck = req.query.deck;
-    console.log(`Raw deck ${rawDeck}`); // Step 1
-
-    if (!rawDeck) {
-      console.log('❌ Missing deck parameter');
-      return res.status(400).json({ error: 'Missing deck parameter' });
-    }
-
-    // Step 1: Parse deck into [{ count, name }]
-    const tokens = rawDeck.trim().split(/\s+/);
     const parsedDeck = [];
-    for (let i = 0; i < tokens.length; ) {
-    const maybeCount = parseInt(tokens[i], 10);
-    if (!isNaN(maybeCount) && tokens[i + 1]) {
-      const nameParts = [];
-      i++; // move past count
-      while (i < tokens.length && isNaN(parseInt(tokens[i], 10))) {
-        nameParts.push(tokens[i]);
-        i++;
-      }
-      parsedDeck.push({
-        count: maybeCount,
-        name: nameParts.join(' '),
-      });
-        } else {
-        i++; // skip invalid token
+    try {
+        const rawDeck = req.query.deck;
+        console.log(`Raw deck ${rawDeck}`); // Step 1
+
+        if (!rawDeck) {
+          console.log('❌ Missing deck parameter');
+          return res.status(400).json({ error: 'Missing deck parameter' });
         }
+
+        // Step 1: Parse deck into [{ count, name }]
+        const tokens = rawDeck.trim().split(/\s+/);
+        for (let i = 0; i < tokens.length; ) {
+        const maybeCount = parseInt(tokens[i], 10);
+        if (!isNaN(maybeCount) && tokens[i + 1]) {
+          const nameParts = [];
+          i++; // move past count
+          while (i < tokens.length && isNaN(parseInt(tokens[i], 10))) {
+            nameParts.push(tokens[i]);
+            i++;
+          }
+          parsedDeck.push({
+            count: maybeCount,
+            name: nameParts.join(' '),
+          });
+            } else {
+            i++; // skip invalid token
+            }
+        }
+    } catch (error) {
+        console.error(`❌ Error parsing deck: ${error.message}`);
+        res.status(500).json({ error: 'Failed to parse deck' });
     }
 
     console.log(`Parsed deck ${parsedDeck}`); // Step 2
@@ -44,57 +48,60 @@ export async function processDeck(req, res) {
 
     const cardData = await getCardArtAll(cardNames);
 
-    // <<< ADD THIS LINE BELOW >>>
-    console.log('DEBUG: cardData received from getCardArtAll (mock):', cardData.map(c => c ? c.name : 'NULL_CARD'));
-    // <<< ADD THIS LINE ABOVE >>>
+    if (process.env.NODE_ENV === 'test') {
+        console.log('DEBUG: cardData received from getCardArtAll (mock):', cardData.map(c => c ? c.name : 'NULL_CARD'));
+    }
 
-    const fetchedCards = parsedDeck.map(c => {
-        const lowerInputName = c.name.toLowerCase(); // Card name from the parsed deck
-        const match = cardData.find(dbCard => {
-            // Check if dbCard itself is null/undefined before accessing properties
-            if (!dbCard) {
-                console.error(`DEBUG: dbCard is null/undefined during find for input: ${c.name}. This indicates getCardArtAll returned null.`);
-                return false;
+    try {
+        // For efficient lookup, create a Map from the fetched card data.
+        // This handles different potential names (front face, full name, etc.).
+        const cardMap = new Map();
+        for (const dbCard of cardData) {
+            if (dbCard && dbCard.name) {
+                // Key by the full name, e.g., "Fable of the Mirror-Breaker // Reflection of Kiki-Jiki"
+                cardMap.set(dbCard.name.toLowerCase(), dbCard);
+
+                // Also key by just the front face name for easy matching
+                const frontFaceName = dbCard.name.split(' // ')[0];
+                cardMap.set(frontFaceName.toLowerCase(), dbCard);
+
+                // Also key by the second face name if it exists
+                if(dbCard.facename) {
+                    cardMap.set(dbCard.facename.toLowerCase(), dbCard);
+                }
             }
-            const lowerDbNameForComparison = dbCard.facename ? dbCard.facename.toLowerCase() : dbCard.name.toLowerCase();
-
-            const isMatch = lowerDbNameForComparison === lowerInputName;
-            // You can uncomment the deeper debug log if needed after the first one
-            // console.log(`DEBUG: CONTROLLER find: Input "${lowerInputName}" vs DB Card { facename: "${dbCard.facename}", name: "${dbCard.name}" }. Match: ${isMatch}`);
-            return isMatch;
-        });
-
-        if (!match) {
-            console.error(`❌ No match found for card: ${c.name}`); // Already there
-            return null; // Card not found in DB
         }
 
-        // *** CHANGE THIS RETURN STATEMENT ***
-        return {
-            count: c.count, // Keep the count from the input deck
-            ...match,       // SPREAD ALL PROPERTIES FROM THE `match` OBJECT (the full DB result)
-        };
+        // Now, map over your ORIGINAL parsedDeck to combine the count with the full card object.
+        const fetchedCards = parsedDeck.map(c => {
+            // Find the full card object from our map using a simple lookup.
+            const match = cardMap.get(c.name.toLowerCase());
+
+            if (!match) {
+                console.error(`❌ No match found in cardMap for card: ${c.name}`);
+                return null; // Card not found in the data we fetched from the DB
+            }
+
+            // Combine the count from the input deck with the full DB object.
+            return {
+                count: c.count,
+                ...match, // Spread all properties from the matched DB card
+            };
         }).filter(Boolean); // Filters out any nulls if a card wasn't found
 
-        // *** ADD THIS NEW BLOCK OF CODE HERE ***
         if (fetchedCards.length === 0) {
-            // If after processing, no cards were successfully matched and fetched,
-            // return a 404 (Not Found) or 400 (Bad Request) status.
-            console.log('❌ No matching cards found for the provided input in the database.');
-            return res.status(404).json({ error: 'No matching cards found for the provided input.' });
+            console.log('❌ No matching cards were successfully processed from the database.');
+            return res.status(404).json({ error: 'None of the requested cards could be found.' });
         }
-        // *** END NEW BLOCK ***
 
-        // This 'response' variable will now only be defined if fetchedCards is not empty
         const response = {
             deck: fetchedCards
         };
 
-        res.json(response); // This is likely the line that was previously throwing the ReferenceError (e.g., line 70)
+        res.json(response);
 
-      } catch (error) {
-        // This catch block handles other unexpected errors during deck processing
-        console.error(`❌ Error processing deck ${error}`); // (e.g., line 72)
+    } catch (error) {
+        console.error(`❌ Error processing deck: ${error.message}`);
         res.status(500).json({ error: 'Failed to process deck' });
-      }
+    }
 }
