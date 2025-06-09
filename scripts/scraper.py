@@ -1,19 +1,16 @@
 import requests
 import json
 import os
+import re
 import time
-from tqdm import tqdm # For progress bars
+from tqdm import tqdm
 
 # --- Configuration ---
 BULK_DATA_MANIFEST_URL = "https://api.scryfall.com/bulk-data"
-# You can choose 'png', 'large', 'normal', 'small', 'art_crop', 'border_crop'
 PREFERRED_IMAGE_QUALITY = 'normal'
-# Directory to save images
+# ✅ UPDATED: The absolute path on your droplet for all image operations.
 IMAGE_OUTPUT_DIRECTORY = 'mtg_images'
-# Scryfall API politeness: delay between image download requests (in seconds)
-# Scryfall recommends 50-100ms. Let's use 0.1 seconds (100ms).
 REQUEST_DELAY = 0.1
-# Path to store the bulk data JSON file to avoid re-downloading it every time
 BULK_DATA_FILE_PATH = 'default_cards_bulk.json'
 
 def get_default_cards_download_uri():
@@ -21,9 +18,8 @@ def get_default_cards_download_uri():
     print("Fetching bulk data manifest...")
     try:
         response = requests.get(BULK_DATA_MANIFEST_URL)
-        response.raise_for_status()  # Raises an exception for HTTP errors
+        response.raise_for_status()
         manifest = response.json()
-
         for bulk_file in manifest.get('data', []):
             if bulk_file.get('type') == 'default_cards':
                 print(f"Found 'default_cards' URI: {bulk_file.get('download_uri')}")
@@ -42,55 +38,57 @@ def download_bulk_data(uri, filepath):
     if os.path.exists(filepath):
         print(f"Bulk data file '{filepath}' already exists. Using local copy.")
         return True
-
     print(f"Downloading bulk data from {uri} to {filepath}...")
     try:
         response = requests.get(uri, stream=True)
         response.raise_for_status()
         total_size = int(response.headers.get('content-length', 0))
-
         with open(filepath, 'wb') as f, tqdm(
-            desc=filepath,
-            total=total_size,
-            unit='iB',
-            unit_scale=True,
-            unit_divisor=1024,
+            desc=filepath, total=total_size, unit='iB',
+            unit_scale=True, unit_divisor=1024,
         ) as bar:
             for chunk in response.iter_content(chunk_size=8192):
                 size = f.write(chunk)
                 bar.update(size)
         print("Bulk data downloaded successfully.")
         return True
-    except requests.exceptions.RequestException as e:
-        print(f"Error downloading bulk data: {e}")
+    except (requests.exceptions.RequestException, IOError) as e:
+        print(f"Error during bulk data download: {e}")
         return False
-    except IOError as e:
-        print(f"Error writing bulk data to file: {e}")
-        return False
-
 
 def sanitize_filename(name):
-    """Removes or replaces characters that are invalid in filenames."""
-    # Replace common problematic characters with an underscore
-    invalid_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
-    for char in invalid_chars:
-        name = name.replace(char, '_')
-    return name
+    """
+    Sanitizes a string to be used in a filename.
+    Keeps spaces in names to match your existing files.
+    """
+    if not name: return "unknown"
+    s = str(name).strip().replace(' // ', '_--_')
+    s = re.sub(r'[<>:"/\\|?*]', '_', s)
+    return s
 
 def download_images_from_bulk_data(bulk_data_filepath):
     """
-    Parses the bulk data JSON and downloads card images.
+    Parses bulk data and efficiently downloads only the images that are not
+    already present in the output directory.
     """
     if not os.path.exists(bulk_data_filepath):
         print(f"Error: Bulk data file '{bulk_data_filepath}' not found.")
         return
 
-    # Create output directory if it doesn't exist
     os.makedirs(IMAGE_OUTPUT_DIRECTORY, exist_ok=True)
-    print(f"Saving images to '{IMAGE_OUTPUT_DIRECTORY}/'")
+    print(f"Image directory is: '{IMAGE_OUTPUT_DIRECTORY}/'")
 
+    print("Scanning for existing images...")
+    try:
+        existing_files = set(os.listdir(IMAGE_OUTPUT_DIRECTORY))
+        print(f"Found {len(existing_files)} existing images.")
+    except OSError as e:
+        print(f"Error scanning image directory: {e}")
+        return
+    
     downloaded_count = 0
-    skipped_count = 0
+    already_exists_count = 0
+    no_uri_count = 0
     error_count = 0
 
     with open(bulk_data_filepath, 'r', encoding='utf-8') as f:
@@ -98,81 +96,64 @@ def download_images_from_bulk_data(bulk_data_filepath):
         all_cards_data = json.load(f)
         print(f"Loaded {len(all_cards_data)} card objects from bulk data.")
 
-    print(f"Starting image download process (Quality: {PREFERRED_IMAGE_QUALITY})...")
+    print(f"\nStarting image download process (Quality: {PREFERRED_IMAGE_QUALITY})...")
     for card_data in tqdm(all_cards_data, desc="Processing cards"):
+        # Use scryfall_id if available for a more stable link, fall back to the card object's id
+        image_id = card_data.get('scryfall_id') or card_data.get('id')
         card_name = card_data.get('name', 'UnknownCard')
-        card_id = card_data.get('id', None) # Scryfall's unique ID for the card print
-
-        if not card_id:
-            print(f"Skipping card '{card_name}' due to missing Scryfall ID.")
-            skipped_count += 1
+        
+        if not image_id:
+            no_uri_count += 1
             continue
 
         image_uri_to_download = None
-
-        # Handle multi-faced cards (e.g., Adventures, Modal DFCs)
-        # The top-level 'image_uris' usually refers to the front face for MDFCs
-        # or the creature part for Adventures.
-        # For tokens or cards without standard images, image_uris might be missing.
-        if 'image_uris' in card_data:
+        if card_data.get('image_uris'):
             image_uri_to_download = card_data['image_uris'].get(PREFERRED_IMAGE_QUALITY)
-        elif 'card_faces' in card_data:
-            # For cards with multiple faces, we'll try to get the first face's image.
-            # You might want to customize this to download all faces.
-            faces = card_data.get('card_faces', [])
-            if faces and 'image_uris' in faces[0]:
-                image_uri_to_download = faces[0]['image_uris'].get(PREFERRED_IMAGE_QUALITY)
-                card_name = faces[0].get('name', card_name) # Use face name if available
+        elif 'card_faces' in card_data and card_data['card_faces'][0].get('image_uris'):
+            image_uri_to_download = card_data['card_faces'][0]['image_uris'].get(PREFERRED_IMAGE_QUALITY)
 
         if not image_uri_to_download:
-            # print(f"No '{PREFERRED_IMAGE_QUALITY}' image URI for '{card_name}' (ID: {card_id}). Skipping.")
-            skipped_count += 1
+            no_uri_count += 1
             continue
 
-        # Determine file extension
-        file_extension = ".jpg" # Default
+        file_extension = ".jpg"
         if PREFERRED_IMAGE_QUALITY == 'png' or image_uri_to_download.lower().endswith('.png'):
             file_extension = ".png"
 
-        # Sanitize card name for filename and append Scryfall ID for uniqueness
         sane_card_name = sanitize_filename(card_name)
-        image_filename = f"{sane_card_name}_{card_id}{file_extension}"
-        image_filepath = os.path.join(IMAGE_OUTPUT_DIRECTORY, image_filename)
-
-        if os.path.exists(image_filepath):
-            # print(f"Image for '{card_name}' (ID: {card_id}) already exists. Skipping.")
-            skipped_count += 1
+        image_filename = f"{sane_card_name}_{image_id}{file_extension}"
+        
+        if image_filename in existing_files:
+            already_exists_count += 1
             continue
 
         try:
-            # print(f"Downloading: {card_name} from {image_uri_to_download}")
             img_response = requests.get(image_uri_to_download, stream=True)
             img_response.raise_for_status()
-
+            
+            image_filepath = os.path.join(IMAGE_OUTPUT_DIRECTORY, image_filename)
             with open(image_filepath, 'wb') as img_f:
                 for chunk in img_response.iter_content(chunk_size=8192):
                     img_f.write(chunk)
+            
             downloaded_count += 1
-            # print(f"Saved: {image_filepath}")
+            existing_files.add(image_filename)
 
         except requests.exceptions.RequestException as e:
-            print(f"Error downloading image for '{card_name}' (ID: {card_id}): {e}")
-            error_count +=1
-        except IOError as e:
-            print(f"Error saving image for '{card_name}' (ID: {card_id}): {e}")
-            error_count +=1
+            tqdm.write(f"Error downloading image for '{card_name}' (ID: {image_id}): {e}")
+            error_count += 1
         finally:
-            time.sleep(REQUEST_DELAY) # API politeness
+            time.sleep(REQUEST_DELAY)
 
     print("\n--- Download Summary ---")
-    print(f"Successfully downloaded: {downloaded_count} images")
-    print(f"Skipped (no URI or already exists): {skipped_count} images")
-    print(f"Errors: {error_count} images")
+    print(f"Successfully downloaded: {downloaded_count} new images")
+    print(f"Skipped (already exist): {already_exists_count} images")
+    print(f"Skipped (no image URI): {no_uri_count} cards")
+    print(f"Errors during download: {error_count} images")
     print("------------------------")
 
 if __name__ == "__main__":
     default_cards_uri = get_default_cards_download_uri()
-
     if default_cards_uri:
         if download_bulk_data(default_cards_uri, BULK_DATA_FILE_PATH):
             download_images_from_bulk_data(BULK_DATA_FILE_PATH)
