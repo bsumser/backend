@@ -11,6 +11,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var Db *sql.DB //created outside to make it global.
+
 func TestDatabaseConnection(t *testing.T) {
 	// 1. Load the env from the root directory
 	// Note: since tests run in the /tests folder,
@@ -33,14 +35,22 @@ func TestDatabaseConnection(t *testing.T) {
 		t.Fatalf("Critical error: could not parse conn string: %v", err)
 	}
 
-	// Ensure the database connection is closed when the test finishes
-	defer db.Close()
-
 	// 2. THE ACTUAL TEST: Ping the database
 	err = db.Ping()
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	Db = db
 	t.Log("Successfully connected and pinged the database!")
+}
+
+func TestCardQuery(t *testing.T) {
+	t.Log("Running card query")
+}
+
+func TestCloseConnection(t *testing.T) {
+	Db.Close()
+	t.Log("Closed database connection")
+
 }
