@@ -12,6 +12,6 @@ func main() {
 
 	srv := api.CreateServer()
 
-	fmt.Println("Server running on port :5000")
-	http.ListenAndServe(":5000", srv.Router)
+	fmt.Println("Server running on port :8080")
+	http.ListenAndServe(":8080", srv.Router)
 }
