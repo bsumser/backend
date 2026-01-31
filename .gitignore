@@ -2,3 +2,38 @@ ca-certificate.crt
 database.env
 *.sql
 *.psql
+# Binaries for programs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Directories created by `go build` or `go test`
+# to cache compiled packages (golang 1.10+)
+.cache/
+
+# Dependency directories (golang < 1.9)
+# Vendor dir
+vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Environment-specific files
+.env
+env.go
+
+# IDE-specific files and directories (examples)
+.idea/         # IntelliJ/GoLand
+.vscode/       # VS Code
+*.sublime-project
+*.sublime-workspace
+*.swp          # Vim swap files
