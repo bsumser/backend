@@ -23,6 +23,11 @@ func CreateServer() *Server {
 }
 
 func (s *Server) MountHandlers() {
+	//check so digital ocean doesn't say invalid
+	s.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("MTG API is running..."))
+	})
+
 	// Basic Health Check
 	s.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
