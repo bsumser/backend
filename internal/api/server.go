@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -64,8 +65,25 @@ func (s *Server) MountHandlers() {
 
 // Handler examples (defined as methods on Server to access DB later)
 func (s *Server) handleGetDeck(w http.ResponseWriter, r *http.Request) {
-	deck := chi.URLParam(r, "deck") // How Chi gets path params
-	w.Write([]byte("Handling get deck: " + deck))
+	// 1. Correctly get the data from the Query String (?deck=...)
+	deck := r.URL.Query().Get("deck")
+
+	// 2. Set the header so the browser knows JSON is coming
+	w.Header().Set("Content-Type", "application/json")
+
+	// 3. Create a JSON response
+	// If deck is empty, return a proper JSON error
+	if deck == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "No deck provided"}`))
+		return
+	}
+
+	// 4. Return a valid JSON object
+	// We use fmt.Sprintf to wrap the result in JSON quotes
+	responseJSON := fmt.Sprintf(`{"message": "Handling get deck", "data": "%s"}`, deck)
+
+	w.Write([]byte(responseJSON))
 }
 
 func (s *Server) handleGetCard(w http.ResponseWriter, r *http.Request) {
