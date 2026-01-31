@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 type Server struct {
@@ -17,6 +18,21 @@ func CreateServer() *Server {
 	// 1. Add some standard middleware
 	s.Router.Use(middleware.Logger)
 	s.Router.Use(middleware.Recoverer)
+
+	//CORS setup for api
+	s.Router.Use(cors.Handler(cors.Options{
+		// The exact origin of your frontend. No trailing slash!
+		AllowedOrigins: []string{"https://bsumser.dev", "http://localhost:3000"},
+
+		// Methods you plan to use
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+
+		// Headers your frontend might send (like Content-Type for JSON)
+		AllowedHeaders: []string{"Accept", "Content-Type", "Authorization"},
+
+		// How long the browser should remember this "permission" (in seconds)
+		MaxAge: 300,
+	}))
 
 	s.MountHandlers()
 	return s
