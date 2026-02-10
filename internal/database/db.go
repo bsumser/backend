@@ -15,7 +15,7 @@ var Db *sql.DB //created outside to make it global.
 // make sure your function start with uppercase to call outside of the directory.
 func ConnectDatabase() {
 
-	err := godotenv.Load() //by default, it is .env so we don't have to write
+	err := godotenv.Load("../../database.env") //by default, it is .env so we don't have to write
 	if err != nil {
 		fmt.Println("Error is occurred  on .env file please check")
 	}
