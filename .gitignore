@@ -2,6 +2,7 @@ ca-certificate.crt
 database.env
 *.sql
 *.psql
+
 # Binaries for programs
 *.exe
 *.exe~
@@ -28,7 +29,7 @@ go.work
 go.work.sum
 
 # Environment-specific files
-.env
+*.env
 env.go
 
 # IDE-specific files and directories (examples)
