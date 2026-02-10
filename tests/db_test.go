@@ -17,7 +17,10 @@ func TestDatabaseConnection(t *testing.T) {
 	// 1. Load the env from the root directory
 	// Note: since tests run in the /tests folder,
 	// we might need to look one level up "../.env"
-	_ = godotenv.Load("../.env")
+	err := godotenv.Load("../database.env") //by default, it is .env so we don't have to write
+	if err != nil {
+		fmt.Println("Error is occurred  on .env file please check")
+	}
 
 	host := os.Getenv("DO_HOST")
 	portStr := os.Getenv("DO_PORT")
@@ -47,6 +50,22 @@ func TestDatabaseConnection(t *testing.T) {
 
 func TestCardQuery(t *testing.T) {
 	t.Log("Running card query")
+	const nameQuery string = `select name from cards limit 5`
+	rows, err := Db.Query(nameQuery)
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			t.Errorf("Error scanning row: %v", err)
+			continue
+		}
+		t.Logf("Found card: %s", name)
+	}
 }
 
 func TestCloseConnection(t *testing.T) {
