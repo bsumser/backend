@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/url" // Import this
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,10 +14,18 @@ type DeckEntry struct {
 
 var lineRegex = regexp.MustCompile(`^(\d+)\s+(.*)$`)
 
-// ParseDeckString converts the raw multiline string into a slice of DeckEntry
 func ParseDeckString(rawDeck string) []DeckEntry {
+	// 1. Convert "%20" to " " and "%0A" to "\n"
+	decodedDeck, err := url.QueryUnescape(rawDeck)
+	if err != nil {
+		// If decoding fails, fall back to the raw string
+		decodedDeck = rawDeck
+	}
+
 	var deck []DeckEntry
-	lines := strings.Split(strings.ReplaceAll(rawDeck, "\r\n", "\n"), "\n")
+
+	// 2. Split the DECODED string
+	lines := strings.Split(strings.ReplaceAll(decodedDeck, "\r\n", "\n"), "\n")
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -24,6 +33,7 @@ func ParseDeckString(rawDeck string) []DeckEntry {
 			continue
 		}
 
+		// 3. Now the regex will find the spaces correctly
 		matches := lineRegex.FindStringSubmatch(line)
 		if len(matches) == 3 {
 			qty, _ := strconv.Atoi(matches[1])
