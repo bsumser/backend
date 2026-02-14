@@ -4,37 +4,68 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // don't forget to add it. It doesn't be added automatically
+	_ "github.com/lib/pq"
 )
 
-var Db *sql.DB //created outside to make it global.
+// We keep the global variable for use in other parts of the app
+var Db *sql.DB
 
-// make sure your function start with uppercase to call outside of the directory.
-func ConnectDatabase() {
-
-	err := godotenv.Load("../../database.env") //by default, it is .env so we don't have to write
-	if err != nil {
-		fmt.Println("Error is occurred  on .env file please check")
+func ConnectDatabase() (*sql.DB, error) {
+	// --- ROBUST ENV LOADING ---
+	// Search upward for the database.env file starting from the current working directory
+	dir, _ := os.Getwd()
+	for {
+		path := filepath.Join(dir, "database.env")
+		if _, err := os.Stat(path); err == nil {
+			godotenv.Load(path)
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break // Reached system root without finding .env
+		}
+		dir = parent
 	}
-	//we read our .env file
+	// ---------------------------
+
 	host := os.Getenv("DO_HOST")
-	port, _ := strconv.Atoi(os.Getenv("DO_PORT")) // don't forget to convert int since port is int type.
+	portStr := os.Getenv("DO_PORT")
+
+	// If portStr is empty, Atoi returns 0, which is causing your error
+	port, err := strconv.Atoi(portStr)
+	if err != nil || port == 0 {
+		return nil, fmt.Errorf("invalid or missing DO_PORT: %v", portStr)
+	}
+
 	user := os.Getenv("DO_USER")
 	dbname := os.Getenv("DO_DB_NAME")
 	pass := os.Getenv("DO_PASSWORD")
 
-	// set up postgres sql to open it.
-	psqlSetup := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable",
-		host, port, user, dbname, pass)
-	db, errSql := sql.Open("postgres", psqlSetup)
-	if errSql != nil {
-		fmt.Println("There is an error while connecting to the database ", err)
-		panic(err)
-	} else {
-		Db = db
-		fmt.Println("Successfully connected to database!")
+	// Double check that we actually got a host
+	if host == "" {
+		return nil, fmt.Errorf("DO_HOST is not set in environment")
 	}
+
+	// Change sslmode from disable to require
+	psqlSetup := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=require",
+		host, port, user, dbname, pass)
+
+	db, err := sql.Open("postgres", psqlSetup)
+	if err != nil {
+		return nil, fmt.Errorf("error opening database: %w", err)
+	}
+
+	// sql.Open doesn't actually test the connection, so we Ping it
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("error pinging database: %w", err)
+	}
+
+	// Set the global variable so your other packages can use it
+	Db = db
+	return db, nil
 }

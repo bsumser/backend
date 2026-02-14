@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -63,27 +63,33 @@ func (s *Server) MountHandlers() {
 	})
 }
 
-// Handler examples (defined as methods on Server to access DB later)
 func (s *Server) handleGetDeck(w http.ResponseWriter, r *http.Request) {
-	// 1. Correctly get the data from the Query String (?deck=...)
-	deck := r.URL.Query().Get("deck")
-
-	// 2. Set the header so the browser knows JSON is coming
-	w.Header().Set("Content-Type", "application/json")
-
-	// 3. Create a JSON response
-	// If deck is empty, return a proper JSON error
-	if deck == "" {
+	// 1. Get and validate data
+	rawDeck := r.URL.Query().Get("deck")
+	if rawDeck == "" {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "No deck provided"}`))
 		return
 	}
 
-	// 4. Return a valid JSON object
-	// We use fmt.Sprintf to wrap the result in JSON quotes
-	responseJSON := fmt.Sprintf(`{"message": "Handling get deck", "data": "%s"}`, deck)
+	// 2. Use the logic from your parser.go file
+	entries := ParseDeckString(rawDeck)
 
-	w.Write([]byte(responseJSON))
+	// 3. Set the header once
+	w.Header().Set("Content-Type", "application/json")
+
+	// 4. Create a final response structure
+	// This is better than manually building a string with Sprintf
+	response := map[string]interface{}{
+		"message": "Handling get deck",
+		"data":    entries,
+	}
+
+	// 5. Encode the whole response as JSON in one go
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+	}
 }
 
 func (s *Server) handleGetCard(w http.ResponseWriter, r *http.Request) {

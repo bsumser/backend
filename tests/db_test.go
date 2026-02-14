@@ -1,57 +1,33 @@
 package tests
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
-	"strconv"
+	"backend/internal/database"
 	"testing"
-
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
-var Db *sql.DB //created outside to make it global.
-
 func TestDatabaseConnection(t *testing.T) {
-	// 1. Load the env from the root directory
-	// Note: since tests run in the /tests folder,
-	// we might need to look one level up "../.env"
-	err := godotenv.Load("../database.env") //by default, it is .env so we don't have to write
+	// Now this matches the return signature of your function
+	db, err := database.ConnectDatabase()
+
 	if err != nil {
-		fmt.Println("Error is occurred  on .env file please check")
+		t.Fatalf("Failed to connect to production DB logic: %v", err)
 	}
 
-	host := os.Getenv("DO_HOST")
-	portStr := os.Getenv("DO_PORT")
-	user := os.Getenv("DO_USER")
-	dbname := os.Getenv("DO_DB_NAME")
-	pass := os.Getenv("DO_PASSWORD")
+	// Close the connection when the test finishes
+	defer db.Close()
 
-	port, _ := strconv.Atoi(portStr)
-
-	psqlSetup := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=require",
-		host, port, user, dbname, pass)
-
-	db, err := sql.Open("postgres", psqlSetup)
-	if err != nil {
-		t.Fatalf("Critical error: could not parse conn string: %v", err)
+	if db == nil {
+		t.Fatal("Database object is nil")
 	}
 
-	// 2. THE ACTUAL TEST: Ping the database
-	err = db.Ping()
-	if err != nil {
-		t.Fatalf("Failed to connect to database: %v", err)
-	}
-
-	Db = db
 	t.Log("Successfully connected and pinged the database!")
 }
 
 func TestCardQuery(t *testing.T) {
+	db, err := database.ConnectDatabase()
 	t.Log("Running card query")
 	const nameQuery string = `select name from cards limit 5`
-	rows, err := Db.Query(nameQuery)
+	rows, err := db.Query(nameQuery)
 	if err != nil {
 		t.Fatalf("Query failed: %v", err)
 	}
@@ -68,8 +44,7 @@ func TestCardQuery(t *testing.T) {
 	}
 }
 
-func TestCloseConnection(t *testing.T) {
-	Db.Close()
-	t.Log("Closed database connection")
-
+func TestDeckFetch(t *testing.T) {
+	t.Log("Running deck fetch on: ")
+	t.Log("4%20Goldspan%20Dragon%0A4%20Hinata%2C%20Dawn-Crowned%0A4%20Expressive%20Iteration%0A1%20Abrade%0A1%20Dragon%27s%20Fire%0A2%20Flame-Blessed%20Bolt%0A4%20Jwari%20Disruption%0A4%20Magma%20Opus%0A2%20Make%20Disappear%0A1%20Negate%0A2%20Spikefield%20Hazard%0A1%20Valorous%20Stance%0A4%20Voltage%20Surge%0A4%20Fable%20of%20the%20Mirror-Breaker%0A1%20Eiganjo%2C%20Seat%20of%20the%20Empire%0A1%20Hall%20of%20Storm%20Giants%0A4%20Hengegate%20Pathway%0A1%20Mountain%0A4%20Needleverge%20Pathway%0A1%20Otawara%2C%20Soaring%20City%0A4%20Riverglide%20Pathway%0A1%20Sokenzan%2C%20Crucible%20of%20Defiance%0A4%20Stormcarved%20Coast%0A1%20Sundown%20Pass")
 }
