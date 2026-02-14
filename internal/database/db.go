@@ -11,10 +11,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// We keep the global variable for use in other parts of the app
-var Db *sql.DB
+// Define the DB struct so other files in this package can see it
+type DB struct {
+	*sql.DB
+}
 
-func ConnectDatabase() (*sql.DB, error) {
+func ConnectDatabase() (*DB, error) {
 	// --- ROBUST ENV LOADING ---
 	// Search upward for the database.env file starting from the current working directory
 	dir, _ := os.Getwd()
@@ -65,7 +67,6 @@ func ConnectDatabase() (*sql.DB, error) {
 		return nil, fmt.Errorf("error pinging database: %w", err)
 	}
 
-	// Set the global variable so your other packages can use it
-	Db = db
-	return db, nil
+	// Return the specific instance
+	return &DB{db}, nil
 }

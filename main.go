@@ -3,15 +3,20 @@ package main
 import (
 	"backend/internal/api"      // Matches folder internal/api
 	"backend/internal/database" // Matches folder internal/database
-	"fmt"
+	"log"
 	"net/http"
 )
 
 func main() {
-	database.ConnectDatabase()
+	// 1. Connect to DB
+	db, err := database.ConnectDatabase()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	srv := api.CreateServer()
+	// 2. Pass DB to server
+	server := api.CreateServer(db)
 
-	fmt.Println("Server running on port :8080")
-	http.ListenAndServe(":8080", srv.Router)
+	// 3. Start listening
+	http.ListenAndServe(":8080", server.Router)
 }

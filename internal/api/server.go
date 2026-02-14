@@ -1,8 +1,8 @@
 package api
 
 import (
-	"encoding/json"
-	"net/http"
+	"backend/internal/database" // Import your database package
+	"net/http"                  // Added for JSON encoding if needed
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -11,28 +11,24 @@ import (
 
 type Server struct {
 	Router *chi.Mux
+	DB     *database.DB // FIX: Add the DB field here
 }
 
-func CreateServer() *Server {
-	s := &Server{Router: chi.NewRouter()}
+// FIX: Pass the DB connection into the server constructor
+func CreateServer(db *database.DB) *Server {
+	s := &Server{
+		Router: chi.NewRouter(),
+		DB:     db, // Initialize the DB field
+	}
 
-	// 1. Add some standard middleware
 	s.Router.Use(middleware.Logger)
 	s.Router.Use(middleware.Recoverer)
 
-	//CORS setup for api
 	s.Router.Use(cors.Handler(cors.Options{
-		// The exact origin of your frontend. No trailing slash!
 		AllowedOrigins: []string{"https://bsumser.dev", "http://localhost:3000"},
-
-		// Methods you plan to use
 		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
-
-		// Headers your frontend might send (like Content-Type for JSON)
 		AllowedHeaders: []string{"Accept", "Content-Type", "Authorization"},
-
-		// How long the browser should remember this "permission" (in seconds)
-		MaxAge: 300,
+		MaxAge:         300,
 	}))
 
 	s.MountHandlers()
@@ -40,31 +36,25 @@ func CreateServer() *Server {
 }
 
 func (s *Server) MountHandlers() {
-	//check so digital ocean doesn't say invalid
 	s.Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("MTG API is running..."))
 	})
 
-	// Basic Health Check
 	s.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
-	// 2. Route Grouping for your API
 	s.Router.Route("/mtg", func(r chi.Router) {
-		r.Get("/deck", s.handleGetDeck) // GET /api/v1/items
+		r.Get("/deck", s.handleGetDeck)
+		r.Get("/card", s.handleGetCard)
 
-		r.Get("/card", s.handleGetCard) // GET /api/v1/items
-
-		// Sub-routing for specific IDs
 		r.Route("/{id}", func(r chi.Router) {
-			r.Get("/", s.handleGetItemByID) // GET /api/v1/items/123
+			r.Get("/", s.handleGetItemByID)
 		})
 	})
 }
 
 func (s *Server) handleGetDeck(w http.ResponseWriter, r *http.Request) {
-	// 1. Get and validate data
 	rawDeck := r.URL.Query().Get("deck")
 	if rawDeck == "" {
 		w.Header().Set("Content-Type", "application/json")
@@ -73,31 +63,27 @@ func (s *Server) handleGetDeck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Use the logic from your parser.go file
 	entries := ParseDeckString(rawDeck)
 
-	// 3. Set the header once
+	// This will now work because s.DB is defined!
+	deckData, err := s.DB.FetchDeckData(entries)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-
-	// 4. Create a final response structure
-	// This is better than manually building a string with Sprintf
-	response := map[string]interface{}{
-		"message": "Handling get deck",
-		"data":    entries,
-	}
-
-	// 5. Encode the whole response as JSON in one go
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
-	}
+	// If FetchDeckData returns []byte, use w.Write.
+	// If it returns a slice of structs, use json.NewEncoder(w).Encode(deckData)
+	w.Write(deckData)
 }
 
 func (s *Server) handleGetCard(w http.ResponseWriter, r *http.Request) {
-	card := chi.URLParam(r, "card") // How Chi gets path params
+	card := chi.URLParam(r, "card")
 	w.Write([]byte("Handling get card: " + card))
 }
 
 func (s *Server) handleGetItemByID(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id") // How Chi gets path params
+	id := chi.URLParam(r, "id")
 	w.Write([]byte("Item ID: " + id))
 }

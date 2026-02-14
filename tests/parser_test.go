@@ -7,9 +7,32 @@ import (
 
 func TestParseDeck(t *testing.T) {
 	t.Log("Testing Parser on: \n")
-	t.Log("4%20Goldspan%20Dragon%0A4%20Hinata%2C%20Dawn-Crowned%0A4%20Expressive%20Iteration%0A1%20Abrade%0A1%20Dragon%27s%20Fire%0A2%20Flame-Blessed%20Bolt%0A4%20Jwari%20Disruption%0A4%20Magma%20Opus%0A2%20Make%20Disappear%0A1%20Negate%0A2%20Spikefield%20Hazard%0A1%20Valorous%20Stance%0A4%20Voltage%20Surge%0A4%20Fable%20of%20the%20Mirror-Breaker%0A1%20Eiganjo%2C%20Seat%20of%20the%20Empire%0A1%20Hall%20of%20Storm%20Giants%0A4%20Hengegate%20Pathway%0A1%20Mountain%0A4%20Needleverge%20Pathway%0A1%20Otawara%2C%20Soaring%20City%0A4%20Riverglide%20Pathway%0A1%20Sokenzan%2C%20Crucible%20of%20Defiance%0A4%20Stormcarved%20Coast%0A1%20Sundown%20Pass")
 
-	deck := "4%20Goldspan%20Dragon%0A4%20Hinata%2C%20Dawn-Crowned%0A4%20Expressive%20Iteration%0A1%20Abrade%0A1%20Dragon%27s%20Fire%0A2%20Flame-Blessed%20Bolt%0A4%20Jwari%20Disruption%0A4%20Magma%20Opus%0A2%20Make%20Disappear%0A1%20Negate%0A2%20Spikefield%20Hazard%0A1%20Valorous%20Stance%0A4%20Voltage%20Surge%0A4%20Fable%20of%20the%20Mirror-Breaker%0A1%20Eiganjo%2C%20Seat%20of%20the%20Empire%0A1%20Hall%20of%20Storm%20Giants%0A4%20Hengegate%20Pathway%0A1%20Mountain%0A4%20Needleverge%20Pathway%0A1%20Otawara%2C%20Soaring%20City%0A4%20Riverglide%20Pathway%0A1%20Sokenzan%2C%20Crucible%20of%20Defiance%0A4%20Stormcarved%20Coast%0A1%20Sundown%20Pass"
+	deck := `4 Goldspan Dragon
+		4 Hinata, Dawn-Crowned
+		4 Expressive Iteration
+		1 Abrade
+		1 Dragon's Fire
+		2 Flame-Blessed Bolt
+		4 Jwari Disruption
+		4 Magma Opus
+		2 Make Disappear
+		1 Negate
+		2 Spikefield Hazard
+		1 Valorous Stance
+		4 Voltage Surge
+		4 Fable of the Mirror-Breaker
+		1 Eiganjo, Seat of the Empire
+		1 Hall of Storm Giants
+		4 Hengegate Pathway
+		1 Mountain
+		4 Needleverge Pathway
+		1 Otawara, Soaring City
+		4 Riverglide Pathway
+		1 Sokenzan, Crucible of Defiance
+		4 Stormcarved Coast
+		1 Sundown Pass`
+	t.Logf("Testing Parser on: %s\n", deck)
 
 	parsedDeck := api.ParseDeckString(deck)
 

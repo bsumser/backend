@@ -1,31 +1,20 @@
 package api
 
 import (
-	"net/url" // Import this
+	"backend/internal/models" // Use the shared models
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-type DeckEntry struct {
-	Quantity int    `json:"quantity"`
-	CardName string `json:"card_name"`
-}
+var lineRegex = regexp.MustCompile(`(?m)^\s*(\d+)\s+(.+)$`)
 
-var lineRegex = regexp.MustCompile(`^(\d+)\s+(.*)$`)
+func ParseDeckString(rawDeck string) []models.DeckEntry {
+	var deck []models.DeckEntry
 
-func ParseDeckString(rawDeck string) []DeckEntry {
-	// 1. Convert "%20" to " " and "%0A" to "\n"
-	decodedDeck, err := url.QueryUnescape(rawDeck)
-	if err != nil {
-		// If decoding fails, fall back to the raw string
-		decodedDeck = rawDeck
-	}
-
-	var deck []DeckEntry
-
-	// 2. Split the DECODED string
-	lines := strings.Split(strings.ReplaceAll(decodedDeck, "\r\n", "\n"), "\n")
+	// Normalize newlines and split
+	cleanInput := strings.ReplaceAll(rawDeck, "\r\n", "\n")
+	lines := strings.Split(cleanInput, "\n")
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -33,13 +22,12 @@ func ParseDeckString(rawDeck string) []DeckEntry {
 			continue
 		}
 
-		// 3. Now the regex will find the spaces correctly
 		matches := lineRegex.FindStringSubmatch(line)
-		if len(matches) == 3 {
+		if len(matches) >= 3 {
 			qty, _ := strconv.Atoi(matches[1])
-			deck = append(deck, DeckEntry{
+			deck = append(deck, models.DeckEntry{
 				Quantity: qty,
-				CardName: matches[2],
+				CardName: strings.TrimSpace(matches[2]),
 			})
 		}
 	}
