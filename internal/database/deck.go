@@ -24,7 +24,8 @@ func (db *DB) FetchDeckData(entries []models.DeckEntry) ([]byte, error) {
 		        c.name,
 				c.colors as colors,
 				c.type as type,
-				c.types as types, 
+				c.types as types,
+				c.manavalue as manavalue, 
 		        c.manacost as mana_cost, 
 		        COALESCE(c.image_url, '') as image_url
 		    FROM cards c
