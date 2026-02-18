@@ -21,7 +21,8 @@ func (db *DB) FetchDeckData(entries []models.DeckEntry) ([]byte, error) {
 		)
 		SELECT COALESCE(json_agg(t), '[]'::json) FROM (
 		    SELECT DISTINCT ON (c.name)
-		        c.name, 
+		        c.name,
+				c.colors as colors, 
 		        c.manacost as mana_cost, 
 		        COALESCE(c.image_url, '') as image_url
 		    FROM cards c
