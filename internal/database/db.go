@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -52,9 +53,8 @@ func ConnectDatabase() (*DB, error) {
 		return nil, fmt.Errorf("DO_HOST is not set in environment")
 	}
 
-	// Change sslmode from disable to require
-	psqlSetup := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=require",
-		host, port, user, dbname, pass)
+	psqlSetup := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=require",
+		user, url.QueryEscape(pass), host, port, dbname)
 
 	db, err := sql.Open("postgres", psqlSetup)
 	if err != nil {
