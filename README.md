@@ -15,14 +15,7 @@
 
 ## Tests
 
-Unit tests are written using Jest. 
-
-```shell
-``````
-``````
-```shell
-npm run test
-```
+Test colorization from grc.
 
 ## SSL Certification
 
